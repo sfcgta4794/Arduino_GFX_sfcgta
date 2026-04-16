@@ -1,3 +1,4 @@
+
 /*******************************************************************************
  * AVI Player example
  *
@@ -28,9 +29,13 @@ const char *avi_folder = "/avi";
 
 // New code section
 
+
 #include <Arduino_GFX_Library.h>
+
 #include <LittleFS.h>
-#include "AviFunc.h"
+
+#include <YCbCr2RGB.h>
+#include <gfxfont.h>
 
 // --- Hardware Pins ---
 #define TFT_BL 21
@@ -45,6 +50,7 @@ const char *avi_folder = "/avi";
 #define TFT_HEIGHT 320
 #define TFT_OFFSET_X 34
 #define GFX_SPEED 80000000UL
+#define BLACK 0x0000
 
 // Setup Display
 Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
@@ -54,8 +60,11 @@ Arduino_ST7789 *gfx = new Arduino_ST7789(
     TFT_OFFSET_X, 0, TFT_OFFSET_X, 0
 );
 
+#include "AviFunc.h"
+
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
+  Serial.println("Program start");
   
   // 1. Initialize Display
   if (!gfx->begin(GFX_SPEED)) {
@@ -66,9 +75,12 @@ void setup() {
   gfx->fillScreen(BLACK);
 
   // 2. Initialize LittleFS
-  if (!LittleFS.begin()) {
-    Serial.println("LittleFS Mount Failed! Did you upload the data?");
-    return;
+  // if (!LittleFS.begin()) {
+  //   Serial.println("LittleFS Mount Failed! Did you upload the data?");
+  //   return;
+  // }
+  if (!LittleFS.begin(false,"/littlefs")){
+    Serial.println("LittleFS Mount Failed.");
   }
   Serial.println("LittleFS Mounted Successfully.");
 
@@ -86,6 +98,8 @@ void loop() {
   }
 
   File file = root.openNextFile();
+
+  // TODO: check this logic to diagnose for reason which blocks the playing of music
   while (file) {
     String path = "/avi/" + String(file.name());
     
