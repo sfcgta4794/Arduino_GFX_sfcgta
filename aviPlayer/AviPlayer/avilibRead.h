@@ -727,6 +727,7 @@ avi_t *AVI_open_input_file(const char *filename, int getIndex)
    AVI = (avi_t *)malloc(sizeof(avi_t));
    if (AVI == NULL)
    {
+      Serial.println("No memory"); // comment this out when not debugging 
       AVI_errno = AVI_ERR_NO_MEM;
       return 0;
    }
@@ -739,6 +740,7 @@ avi_t *AVI_open_input_file(const char *filename, int getIndex)
    AVI->fdes = open(filename, O_RDONLY);
    if (AVI->fdes < 0)
    {
+      Serial.println("Unable to open the AVI file"); // comment this out when not debugging 
       AVI_errno = AVI_ERR_OPEN;
       free(AVI);
       return 0;

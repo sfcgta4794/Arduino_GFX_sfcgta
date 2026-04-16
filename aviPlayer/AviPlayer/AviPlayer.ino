@@ -24,7 +24,7 @@
  * code 1: PCM
  * code 85: MP3
  ******************************************************************************/
-const char *root = "/root";
+// const char *root = "/root";
 const char *avi_folder = "/avi";
 
 // New code section
@@ -33,7 +33,7 @@ const char *avi_folder = "/avi";
 #include <Arduino_GFX_Library.h>
 
 #include <LittleFS.h>
-
+#include <FS.h>
 #include <YCbCr2RGB.h>
 #include <gfxfont.h>
 
@@ -63,8 +63,13 @@ Arduino_ST7789 *gfx = new Arduino_ST7789(
 #include "AviFunc.h"
 
 void setup() {
-  Serial.begin(9600);
-  Serial.println("Program start");
+  Serial.begin(115200);
+  // REQUIRED for USB CDC: Wait for the serial port to actually open
+  unsigned long start_time = millis();
+  while (!Serial && millis() - start_time < 5000) {
+    delay(10);
+  }
+  Serial.println("\n--- AVI Player Initialization ---");
   
   // 1. Initialize Display
   if (!gfx->begin(GFX_SPEED)) {
@@ -72,55 +77,81 @@ void setup() {
   }
   pinMode(TFT_BL, OUTPUT);
   digitalWrite(TFT_BL, HIGH);
+  // 3. Initialize Display
+  if (!gfx->begin(GFX_SPEED)) {
+    Serial.println("gfx->begin() failed!");
+  }
   gfx->fillScreen(BLACK);
 
+  // Ensure PSRAM is enabled in Tools menu for your N16R8
+  output_buf_size = 172 * 320 * 2; // Width * Height * 2 bytes
+  output_buf = (uint16_t *)heap_caps_malloc(output_buf_size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+
+  if (!output_buf) {
+    Serial.println("PSRAM Allocation failed! Check Tools > PSRAM setting.");
+  } else {
+    Serial.println("PSRAM Allocation success");
+  }
+
   // 2. Initialize LittleFS
-  // if (!LittleFS.begin()) {
-  //   Serial.println("LittleFS Mount Failed! Did you upload the data?");
-  //   return;
-  // }
-  if (!LittleFS.begin(false,"/littlefs")){
+  if (!LittleFS.begin()) {
+    Serial.println("LittleFS Mount Failed! Did you upload the data?");
+    return;
+  }
+  if (!LittleFS.begin(false,"/root")){
     Serial.println("LittleFS Mount Failed.");
   }
   Serial.println("LittleFS Mounted Successfully.");
+
+  
 
   // 3. Initialize AVI decoder
   avi_init();
 }
 
 void loop() {
-  // Look for AVI files in the /avi folder of LittleFS
+  Serial.println("XXX");
+  // // Look for AVI files in the /avi folder of LittleFS
   File root = LittleFS.open("/avi");
   if (!root || !root.isDirectory()) {
     Serial.println("Please create an /avi folder in your data directory.");
     delay(5000);
     return;
   }
-
+  
+  Serial.println("Trying to read documents");
   File file = root.openNextFile();
 
-  // TODO: check this logic to diagnose for reason which blocks the playing of music
+  // // TODO: check this logic to diagnose for reason which blocks the playing of music
   while (file) {
-    String path = "/avi/" + String(file.name());
+    Serial.printf("File name is %s\n", String(file.name()));
+    String path = String(file.name());
     
     if (path.endsWith(".avi")) {
-      Serial.printf("Playing: %s\n", path.c_str());
+      String full_path = "/root/avi/" + path;
+      // Serial.printf("Playing: %s\n", full_path);
       
-      if (avi_open((char*)path.c_str())) {
-        while (avi_curr_frame < avi_total_frames) {
-          if (avi_decode()) {
-            // Draw frame at 0,0
-            avi_draw(0, 0);
-          }
-          yield(); // Keep ESP32 watchdog happy
-        }
-        avi_close();
+      if (avi_open((char *)full_path.c_str())) {
+        Serial.println("Playback finished.");
+      } else {
+        Serial.println("avi_open failed! Check codec (MJPEG) and path.");
       }
+      // if (avi_open((char*)full_path.c_str())) {
+      //   // while (avi_curr_frame < avi_total_frames) {
+      //   //   if (avi_decode()) {
+      //   //     // Draw frame at 0,0
+      //   //     avi_draw(0, 0);
+      //   //   }
+      //   //   yield(); // Keep ESP32 watchdog happy
+      //   // }
+      //   // avi_close();
+      //   Serial.println
+      // }
     }
     file = root.openNextFile();
   }
   
-  Serial.println("Finished playing all videos. Restarting playlist...");
+  // Serial.println("Finished playing all videos. Restarting playlist...");
   delay(1000);
 }
 
