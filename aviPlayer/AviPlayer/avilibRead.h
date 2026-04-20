@@ -737,7 +737,10 @@ avi_t *AVI_open_input_file(const char *filename, int getIndex)
 
    /* Open the file */
 
+
+   Serial.println("Trying to open");
    AVI->fdes = open(filename, O_RDONLY);
+   Serial.printf("Tried to open with AVI->fdes = %d\n", AVI->fdes);
    if (AVI->fdes < 0)
    {
       Serial.println("Unable to open the AVI file"); // comment this out when not debugging 

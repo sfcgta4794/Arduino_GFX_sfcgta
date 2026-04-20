@@ -24,8 +24,196 @@
  * code 1: PCM
  * code 85: MP3
  ******************************************************************************/
-#include <Wire.h>
-#include "es8311.h"
+// const char *root = "/root";
+const char *avi_folder = "/avi";
+
+// New code section
+
+
+#include <Arduino_GFX_Library.h>
+
+#include <LittleFS.h>
+#include <FS.h>
+#include <YCbCr2RGB.h>
+#include <gfxfont.h>
+
+// --- Hardware Pins ---
+#define TFT_BL 21
+#define TFT_DC 9
+#define TFT_CS 13
+#define TFT_SCLK 12
+#define TFT_MOSI 11
+#define TFT_RST 10
+
+// --- Screen Specs (ZJY147S0800TG01) ---
+#define TFT_WIDTH 172
+#define TFT_HEIGHT 320
+#define TFT_OFFSET_X 34
+#define GFX_SPEED 80000000UL
+#define BLACK 0x0000
+
+// Setup Display
+Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
+Arduino_ST7789 *gfx = new Arduino_ST7789(
+    bus, TFT_RST, 0 /* Rotation */, true /* IPS */, 
+    TFT_WIDTH, TFT_HEIGHT, 
+    TFT_OFFSET_X, 0, TFT_OFFSET_X, 0
+);
+
+#include "AviFunc.h"
+
+void setup() {
+  Serial.begin(115200);
+  // REQUIRED for USB CDC: Wait for the serial port to actually open
+  unsigned long start_time = millis();
+  while (!Serial && millis() - start_time < 5000) {
+    delay(10);
+  }
+  Serial.println("\n--- AVI Player Initialization ---");
+  
+  // 1. Initialize Display
+  if (!gfx->begin(GFX_SPEED)) {
+    Serial.println("Display Init Failed!");
+  }
+  pinMode(TFT_BL, OUTPUT);
+  digitalWrite(TFT_BL, HIGH);
+  // 3. Initialize Display
+  if (!gfx->begin(GFX_SPEED)) {
+    Serial.println("gfx->begin() failed!");
+  }
+  gfx->fillScreen(BLACK);
+
+  // Ensure PSRAM is enabled in Tools menu for your N16R8
+  output_buf_size = 172 * 320 * 2; // Width * Height * 2 bytes
+  output_buf = (uint16_t *)heap_caps_malloc(output_buf_size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+
+  if (!output_buf) {
+    Serial.println("PSRAM Allocation failed! Check Tools > PSRAM setting.");
+  } else {
+    Serial.println("PSRAM Allocation success");
+  }
+
+  // 2. Initialize LittleFS
+  // if (!LittleFS.begin()) {
+  //   Serial.println("LittleFS Mount Failed! Did you upload the data?");
+  //   return;
+  // }
+  if (!LittleFS.begin(false,"/root")){
+    Serial.println("LittleFS Mount Failed.");
+  }
+  Serial.println("LittleFS Mounted Successfully to /");
+
+  
+
+  // 3. Initialize AVI decoder
+  avi_init();
+}
+
+void loop() {
+  // // Look for AVI files in the /avi folder of LittleFS
+  File root = LittleFS.open("/avi");
+  if (!root || !root.isDirectory()) {
+    Serial.println("Please create an /avi folder in your data directory.");
+    gfx->fillScreen(0xf800); // Red screen for error
+    gfx->setCursor(0, 0);
+    gfx->println("Folder /avi missing!");
+    delay(5000);
+    return;
+  }
+  
+  Serial.println("Trying to read documents");
+  File file = root.openNextFile();
+
+  // // TODO: check this logic to diagnose for reason which blocks the playing of music
+  while (file) {
+    Serial.printf("File name is %s\n", String(file.name()).c_str());
+    String path = String(file.name()).c_str();
+    
+    if (path.endsWith(".avi")) {
+      String full_path1 = "/avi/" + path;
+      // Serial.printf("Playing: %s\n", full_path);
+      
+      Serial.printf("Checking: %s\n", full_path1.c_str());
+
+      // --- STAGE 1: System Level Check ---
+      if (LittleFS.exists((char*)full_path1.c_str())) {
+        Serial.println("System Check: SUCCESS (File exists in LittleFS)");
+        gfx->setTextColor(0x07E0); // Green
+        gfx->printf("Found: %s\n", full_path1.c_str());
+      } else {
+        Serial.println("System Check: FAILED (File not found!)");
+        gfx->setTextColor(0xF800); // Red
+        gfx->printf("Missing: %s\n", full_path1.c_str());
+        continue;
+      }
+
+      // --- STAGE 2: AVI Library Check ---
+      Serial.println("Opening via avi_open...");
+      if (avi_open((char *)full_path1.c_str())) {
+        Serial.println("Playback starting...");
+        // ... Playback loop logic here ...
+        while (avi_curr_frame < avi_total_frames) {
+          if (avi_decode()) {
+            // Draw frame at 0,0
+            avi_draw(0, 0);
+          }
+          yield(); // Keep ESP32 watchdog happy
+        }
+        avi_close();
+      } else {
+        Serial.println("avi_open: FAILED (Check VFS mount or Codec)");
+        gfx->setTextColor(0xFFFF); // White
+        gfx->println("Error: avi_open failed");
+      }
+
+      // if (avi_open((char *)full_path.c_str())) {
+      //   Serial.println("Playback finished.");
+      // } else {
+      //   Serial.println("avi_open failed! Check codec (MJPEG) and path.");
+      // }
+      // if (avi_open((char*)full_path.c_str())) {
+      //   // while (avi_curr_frame < avi_total_frames) {
+      //   //   if (avi_decode()) {
+      //   //     // Draw frame at 0,0
+      //   //     avi_draw(0, 0);
+      //   //   }
+      //   //   yield(); // Keep ESP32 watchdog happy
+      //   // }
+      //   // avi_close();
+      //   Serial.println
+      // }
+    }
+    file = root.openNextFile();
+  }
+  
+  // Serial.println("Finished playing all videos. Restarting playlist...");
+  delay(1000);
+}
+
+
+
+
+// Old code section
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// #include <Wire.h>
+// #include "es8311.h"
 // // Dev Device Pins: <https://github.com/moononournation/Dev_Device_Pins.git>
 // // #include "PINS_AD35-S3.h"
 // // #include "PINS_ESP32-S3-Touch-LCD-1_3.h"
