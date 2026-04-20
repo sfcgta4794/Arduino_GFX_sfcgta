@@ -41,28 +41,135 @@
 // // #include "PINS_T4_S3.h"
 
 // // Use customized layout
-// #include "PINS_ESP32_S3_LCD_1.47_CUSTOM.h"
+#include "PINS_ESP32_S3_LCD_1.47_CUSTOM.h"
 
-// #ifdef I2S_OUTPUT
-// #define AVI_SUPPORT_AUDIO
-// #endif
+#ifdef I2S_OUTPUT
+#define AVI_SUPPORT_AUDIO
+#endif
 
-// #include "AviFunc.h"
+#include "AviFunc.h"
 
-// #ifdef AVI_SUPPORT_AUDIO
-// #include "esp32_audio.h"
-// #endif
+#ifdef AVI_SUPPORT_AUDIO
+#include "esp32_audio.h"
+#endif
 
-// #include <string>
+#ifndef AUDIO_MUTE
+#define AUDIO_MUTE true
+#endif
 
-// #include <FFat.h>
-// #include <LittleFS.h>
-// #include <SPIFFS.h>
+#ifndef FILESYSTEM
+#define FILESYSTEM LittleFS
+#endif
+
+
+#include <string>
+
+#include <FFat.h>
+#include <LittleFS.h>
+#include <SPIFFS.h>
 // #include <SD.h>
 // #ifdef SOC_SDMMC_HOST_SUPPORTED
 // #include <SD_MMC.h>
 // #endif
 
+const char *root = "/root";
+const char *avi_folder = "/avi";
+
+void setup(){
+  #ifdef DEV_DEVICE_INIT
+    DEV_DEVICE_INIT();
+  #endif
+
+  Serial.begin(115200);
+  Serial.setDebugOutput(true);
+  // while(!Serial); // wait for Serial port to be ready. 
+
+  // Init Display
+  // if (!gfx->begin())
+  if (!gfx->begin(GFX_SPEED))
+  {
+    Serial.println("gfx->begin() failed!");
+  }
+  gfx->fillScreen(RGB565_BLUE); // default is RGB565_BLACK
+  Serial.println("AVI Player Testing");
+  #if defined(RGB_PANEL) || defined(DSI_PANEL) || defined(CANVAS)
+    gfx->flush(true /* force_flush */);
+  #endif
+
+  #ifdef GFX_BL
+    #if defined(ESP_ARDUINO_VERSION_MAJOR) && (ESP_ARDUINO_VERSION_MAJOR < 3)
+      ledcSetup(0, 1000, 8);
+      ledcAttachPin(GFX_BL, 0);
+      ledcWrite(0, 63);
+    #else  // ESP_ARDUINO_VERSION_MAJOR >= 3
+      ledcAttachChannel(GFX_BL, 1000, 8, 1);
+      ledcWrite(GFX_BL, 63);
+    #endif // ESP_ARDUINO_VERSION_MAJOR >= 3
+  #endif // GFX_BL
+
+  gfx->setTextColor(RGB565_WHITE, RGB565_BLACK);
+  gfx->setTextBound(60, 60, 240, 240);
+
+  // #ifdef AVI_SUPPORT_AUDIO
+  // #ifdef AUDIO_EXTRA_PRE_INIT
+  //   AUDIO_EXTRA_PRE_INIT();
+  // #endif
+
+  //   i2s_init();
+
+  #ifdef AUDIO_MUTE
+    pinMode(AUDIO_MUTE, OUTPUT);
+    digitalWrite(AUDIO_MUTE, LOW); // mute first
+  #endif
+
+  // uncomment depends on your need!
+
+  // #if defined(FILESYSTEM) && (FILESYSTEM == FFat)
+  //   Serial.println("Mount FFat");
+  //   if (!FFat.begin(false, "/root"))
+
+  #if defined(FILESYSTEM) && (FILESYSTEM == LittleFS)
+    Serial.println("Mount LittleFS");
+    if (!LittleFS.begin(false, "/root"))
+
+  // #if defined(FILESYSTEM) && (FILESYSTEM == SPIFFS)
+  //   Serial.println("Mount SPIFFS");
+  //   if (!SPIFFS.begin(false, "/root"))
+  #endif
+    {
+      Serial.println("ERROR: File system mount failed!");
+    }
+    else{
+      // screen init successful
+      output_buf_size = gfx->width() * gfx->height() * 2;
+      #if defined(RGB_PANEL) | defined(DSI_PANEL)
+          output_buf = gfx->getFramebuffer();
+      #else
+          output_buf = (uint16_t *)aligned_alloc(16, output_buf_size);
+      #endif
+
+      if (!output_buf)
+      {
+        Serial.println("output_buf aligned_alloc failed!");
+      }
+
+      avi_init();
+    }
+}
+
+void loop(){
+  Serial.printf("Open folder: %s\n", avi_folder);
+  File dir = FILESYSTEM.open(avi_folder);
+  if (!dir.isDirectory())
+  {
+    Serial.println("Not a directory");
+    delay(5000); // avoid error repeat too fast
+  }
+  else {
+    
+  }
+
+}
 // void setup()
 // {
 // #ifdef DEV_DEVICE_INIT

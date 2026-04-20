@@ -27,7 +27,7 @@
  * 2. DISPLAY SPECIFICATIONS
  * Specific to ZJY147S0800TG01 (1.47" 172x320)
  */
-#define TFT_WIDTH       172
+#define TFT_WIDTH       170
 #define TFT_HEIGHT      320
 #define TFT_OFFSET_X    0    // Required to center the 172px width in 240px memory
 #define TFT_OFFSET_Y    0
