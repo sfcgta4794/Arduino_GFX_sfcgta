@@ -27,9 +27,9 @@
  * 2. DISPLAY SPECIFICATIONS
  * Specific to ZJY147S0800TG01 (1.47" 172x320)
  */
-#define TFT_WIDTH       170
-#define TFT_HEIGHT      320
-#define TFT_OFFSET_X    0    // Required to center the 172px width in 240px memory
+#define TFT_WIDTH       240
+#define TFT_HEIGHT      240
+#define TFT_OFFSET_X    0   // Required to center the 172px width in 240px memory
 #define TFT_OFFSET_Y    0
 #define GFX_SPEED       80000000UL // 80MHz SPI speed for the S3
 
@@ -53,7 +53,7 @@ Arduino_DataBus *bus = new Arduino_ESP32SPI(
 Arduino_ST7789 *gfx = new Arduino_ST7789(
     bus, 
     TFT_RST, 
-    0,               /* rotation: 0 (portrait) */
+    1,               /* rotation: 0 (portrait) */
     true,            /* IPS: true for ZJY model */
     TFT_WIDTH, 
     TFT_HEIGHT,

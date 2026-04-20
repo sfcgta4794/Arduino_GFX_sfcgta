@@ -27,9 +27,9 @@
  * 2. DISPLAY SPECIFICATIONS
  * Specific to ZJY147S0800TG01 (1.47" 172x320)
  */
-#define TFT_WIDTH       240
-#define TFT_HEIGHT      240
-#define TFT_OFFSET_X    0   // Required to center the 172px width in 240px memory
+#define TFT_WIDTH       170
+#define TFT_HEIGHT      320
+#define TFT_OFFSET_X    35    // Required to center the 172px width in 240px memory
 #define TFT_OFFSET_Y    0
 #define GFX_SPEED       80000000UL // 80MHz SPI speed for the S3
 

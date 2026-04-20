@@ -162,14 +162,182 @@ void loop(){
   File dir = FILESYSTEM.open(avi_folder);
   if (!dir.isDirectory())
   {
-    Serial.println("Not a directory");
+    Serial.println("Target is not a directory");
     delay(5000); // avoid error repeat too fast
   }
   else {
-    
-  }
+    // target is a directory
+    File file = dir.openNextFile();
+    while (file)
+    {
+      if (!file.isDirectory())
+      {
+          std::string s = file.name();
+          // if ((!s.starts_with(".")) && (s.ends_with(".avi"))) // Alternative 1
+          if ((s.rfind(".", 0) != 0) && ((int)s.find(".avi", 0) > 0))
+          {
+              s = root;
+              s += file.path();
 
+            if (avi_open((char *)s.c_str()))
+            {
+              Serial.println("AVI start");
+              gfx->fillScreen(RGB565_BLACK);
+
+#ifdef AVI_SUPPORT_AUDIO
+#ifdef AUDIO_MUTE
+              digitalWrite(AUDIO_MUTE, HIGH); // unmute
+#endif
+
+              if (avi_aRate > 0)
+              {
+                i2s_set_sample_rate(avi_aRate);
+              }
+
+              avi_feed_audio();
+
+              if (avi_aFormat == PCM_CODEC_CODE)
+              {
+                Serial.println("Start play PCM audio task");
+                BaseType_t ret_val = pcm_player_task_start();
+                if (ret_val != pdPASS)
+                {
+                  Serial.printf("pcm_player_task_start failed: %d\n", ret_val);
+                }
+              }
+              else if (avi_aFormat == MP3_CODEC_CODE)
+              {
+                Serial.println("Start play MP3 audio task");
+                BaseType_t ret_val = mp3_player_task_start();
+                if (ret_val != pdPASS)
+                {
+                  Serial.printf("mp3_player_task_start failed: %d\n", ret_val);
+                }
+              }
+              else
+              {
+                Serial.println("No audio task");
+              }
+#endif
+              avi_start_ms = millis();
+
+              Serial.println("Start play loop");
+
+              while (avi_curr_frame < avi_total_frames)
+              {
+#ifdef AVI_SUPPORT_AUDIO
+                avi_feed_audio();
+#endif
+                
+                if (avi_decode())
+                {
+                  avi_draw(0, 0);
+                }
+              }
+
+#if defined(AVI_SUPPORT_AUDIO) && defined(AUDIO_MUTE)
+              digitalWrite(AUDIO_MUTE, LOW); // mute
+#endif
+
+              avi_close();
+              Serial.println("AVI end");
+
+              // avi_show_stat(); // for debug stat
+              delay(5000); // 5 seconds
+            }
+          }
+        }
+      }
+      file = dir.openNextFile();
+    }
+    dir.close();
 }
+
+
+//         std::string s = file.name();
+//         // if ((!s.starts_with(".")) && (s.ends_with(".avi")))
+//         if ((s.rfind(".", 0) != 0) && ((int)s.find(".avi", 0) > 0))
+//         {
+//           if (random(100) > 90)
+//           {
+//             s = root;
+//             s += file.path();
+//             if (avi_open((char *)s.c_str()))
+//             {
+//               Serial.println("AVI start");
+//               gfx->fillScreen(RGB565_BLACK);
+
+// #ifdef AVI_SUPPORT_AUDIO
+// #ifdef AUDIO_MUTE
+//               digitalWrite(AUDIO_MUTE, HIGH); // unmute
+// #endif
+
+//               if (avi_aRate > 0)
+//               {
+//                 i2s_set_sample_rate(avi_aRate);
+//               }
+
+//               avi_feed_audio();
+
+//               if (avi_aFormat == PCM_CODEC_CODE)
+//               {
+//                 Serial.println("Start play PCM audio task");
+//                 BaseType_t ret_val = pcm_player_task_start();
+//                 if (ret_val != pdPASS)
+//                 {
+//                   Serial.printf("pcm_player_task_start failed: %d\n", ret_val);
+//                 }
+//               }
+//               else if (avi_aFormat == MP3_CODEC_CODE)
+//               {
+//                 Serial.println("Start play MP3 audio task");
+//                 BaseType_t ret_val = mp3_player_task_start();
+//                 if (ret_val != pdPASS)
+//                 {
+//                   Serial.printf("mp3_player_task_start failed: %d\n", ret_val);
+//                 }
+//               }
+//               else
+//               {
+//                 Serial.println("No audio task");
+//               }
+// #endif
+
+//               avi_start_ms = millis();
+
+//               Serial.println("Start play loop");
+//               while (avi_curr_frame < avi_total_frames)
+//               {
+// #ifdef AVI_SUPPORT_AUDIO
+//                 avi_feed_audio();
+// #endif
+
+//                 if (avi_decode())
+//                 {
+//                   avi_draw(0, 0);
+//                 }
+//               }
+
+// #if defined(AVI_SUPPORT_AUDIO) && defined(AUDIO_MUTE)
+//               digitalWrite(AUDIO_MUTE, LOW); // mute
+// #endif
+
+//               avi_close();
+//               Serial.println("AVI end");
+
+//               avi_show_stat();
+//               delay(5000); // 5 seconds
+//             }
+//           }
+//         }
+//       }
+//       file = dir.openNextFile();
+//     }
+//     dir.close();
+//   }
+  // }
+
+// }
 // void setup()
 // {
 // #ifdef DEV_DEVICE_INIT
