@@ -31,7 +31,7 @@
 #define TFT_HEIGHT      240
 #define TFT_OFFSET_X    0   // Required to center the 172px width in 240px memory
 #define TFT_OFFSET_Y    0
-#define GFX_SPEED       80000000UL // 80MHz SPI speed for the S3
+#define GFX_SPEED       20000000UL // 80MHz SPI speed for the S3 （when using internal memory)
 
 /*
  * 3. GFX INSTANTIATION
