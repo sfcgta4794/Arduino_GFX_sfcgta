@@ -43,10 +43,11 @@
 // Initialize the ESP32-S3 SPI Bus
 Arduino_DataBus *bus = new Arduino_ESP32SPI(
     TFT_DC, 
-    TFT_CS, 
-    TFT_SCLK, 
-    TFT_MOSI, 
-    TFT_MISO
+    TFT_CS,
+    -1, -1, -1, FSPI
+    // TFT_SCLK, 
+    // TFT_MOSI, 
+    // TFT_MISO
 );
 
 // Initialize the ST7789 Driver

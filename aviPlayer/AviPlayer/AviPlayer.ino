@@ -61,7 +61,6 @@
 #define FILESYSTEM LittleFS
 #endif
 
-
 #include <string>
 
 #include <FFat.h>
@@ -74,6 +73,8 @@
 
 const char *root = "/root";
 const char *avi_folder = "/avi";
+
+bool init_succ = false;
 
 void setup(){
   // disable the SD card first
@@ -90,11 +91,17 @@ void setup(){
 
   Serial.begin(115200);
   Serial.setDebugOutput(true);
+  Serial.println("Starting aviplayer");
   // while(!Serial); // wait for Serial port to be ready. 
 
     // If display and SD shared same interface, init SPI first
-#ifdef SPI_SCK
-  SPI.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
+#ifdef SD_SCK
+  Serial.println("Init SPI");
+  bool spi_init = SPI.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
+  if (!spi_init)
+    Serial.println("Unable to initalize the SPI Bus pins!");
+  else
+    Serial.println("SPI initialized");
 #endif
 
   // Init Display
@@ -174,7 +181,8 @@ void setup(){
       Serial.println("ERROR: File system mount failed!");
     }
     else{
-      // screen init successful
+      // screen init 
+      Serial.println("File system mounted");
       output_buf_size = gfx->width() * gfx->height() * 2;
       #if defined(RGB_PANEL) | defined(DSI_PANEL)
           output_buf = gfx->getFramebuffer();
