@@ -67,8 +67,8 @@ Arduino_ST7789 *gfx = new Arduino_ST7789(
  * 4. OPTIONAL: SD CARD (Shared SPI Bus)
  * If you add an SD card later for AVI playback, use these pins.
  */
-// #define SD_SUPPORTED
-// #define SD_SCK          TFT_SCLK
-// #define SD_MOSI         TFT_MOSI
-// #define SD_MISO         14    // Example MISO pin for SD card
-// #define SD_CS           15    // Example CS pin for SD card
+#define SD_SUPPORTED
+#define SD_SCK          TFT_SCLK
+#define SD_MOSI         TFT_MOSI
+#define SD_MISO         14    // Example MISO pin for SD card
+#define SD_CS           15    // Example CS pin for SD card

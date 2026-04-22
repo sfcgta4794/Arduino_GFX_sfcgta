@@ -78,7 +78,9 @@ const char *avi_folder = "/avi";
 void setup(){
   // disable the SD card first
   pinMode(SD_CS, OUTPUT);
+  pinMode(TFT_CS, OUTPUT);
   digitalWrite(SD_CS,HIGH);
+  digitalWrite(TFT_CS, HIGH);
 
   // Init. 
 
@@ -92,7 +94,7 @@ void setup(){
 
     // If display and SD shared same interface, init SPI first
 #ifdef SPI_SCK
-  SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI);
+  SPI.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
 #endif
 
   // Init Display
@@ -136,22 +138,23 @@ void setup(){
 
 
   // uncomment depends on your need!
-  #if defined(SD_D1) && defined(SOC_SDMMC_HOST_SUPPORTED)
-  #define FILESYSTEM SD_MMC
-    Serial.println("mount SD_MMC 4-bit");
-    SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */, SD_D1, SD_D2, SD_CS /* D3 */);
-    if (!SD_MMC.begin(root, false /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_HIGHSPEED))
-  #elif defined(SD_SCK) && defined(SOC_SDMMC_HOST_SUPPORTED)
-  #define FILESYSTEM SD_MMC
-    Serial.println("mount SD_MMC 1-bit");
-    pinMode(SD_CS, OUTPUT);
-    digitalWrite(SD_CS, HIGH);
-    SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */);
-    if (!SD_MMC.begin(root, true /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_HIGHSPEED))
-  #elif defined(SD_CS)
+  // #if defined(SD_D1) && defined(SOC_SDMMC_HOST_SUPPORTED)
+  // #define FILESYSTEM SD_MMC
+  //   Serial.println("mount SD_MMC 4-bit");
+  //   SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */, SD_D1, SD_D2, SD_CS /* D3 */);
+  //   if (!SD_MMC.begin(root, false /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_HIGHSPEED))
+  // #elif defined(SD_SCK) && defined(SOC_SDMMC_HOST_SUPPORTED)
+  // #define FILESYSTEM SD_MMC
+  //   Serial.println("mount SD_MMC 1-bit");
+  //   pinMode(SD_CS, OUTPUT);
+  //   digitalWrite(SD_CS, HIGH);
+  //   SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */);
+  //   if (!SD_MMC.begin(root, true /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_HIGHSPEED))
+  // #elif defined(SD_CS)
+  #if defined(SD_CS)
   #define FILESYSTEM SD
     Serial.println("mount SPI SD");
-    if (!SD.begin(SD_CS, SPI, 80000000, "/root"))
+    if (!SD.begin(SD_CS, SPI, 20000000)) //, "/root"
   #else
   #define FILESYSTEM LittleFS
 
