@@ -72,9 +72,11 @@
 #endif
 
 const char *root = "/root";
+const char *sd = "/sd";
 const char *avi_folder = "/avi";
 
 bool init_succ = false;
+int storage_type = 0; // 0 = LittleFS, 1 = SD
 
 void setup(){
   // disable the SD card first
@@ -110,7 +112,13 @@ void setup(){
   {
     Serial.println("gfx->begin() failed!");
   }
-  gfx->fillScreen(RGB565_BLUE); // default is RGB565_BLACK
+  // gfx->fillScreen(RGB565_BLUE); // default is RGB565_BLACK
+  
+  gfx->fillScreen(RGB565_RED); // Should turn the whole screen red immediately
+  delay(500);
+  gfx->fillScreen(RGB565_BLUE);
+  delay(500);
+  
   Serial.println("AVI Player Testing");
   #if defined(RGB_PANEL) || defined(DSI_PANEL) || defined(CANVAS)
     gfx->flush(true /* force_flush */);
@@ -123,7 +131,7 @@ void setup(){
       ledcWrite(0, 63);
     #else  // ESP_ARDUINO_VERSION_MAJOR >= 3
       ledcAttachChannel(GFX_BL, 1000, 8, 1);
-      ledcWrite(GFX_BL, 63);
+      ledcWrite(GFX_BL, 255);
     #endif // ESP_ARDUINO_VERSION_MAJOR >= 3
   #endif // GFX_BL
 
@@ -161,7 +169,8 @@ void setup(){
   #if defined(SD_CS)
   #define FILESYSTEM SD
     Serial.println("mount SPI SD");
-    if (!SD.begin(SD_CS, SPI, 20000000)) //, "/root"
+    storage_type = 1;
+    if (!SD.begin(SD_CS, SPI, 8000000)) //, "/root", 20000000
   #else
   #define FILESYSTEM LittleFS
 
@@ -171,6 +180,7 @@ void setup(){
 
   // #if defined(FILESYSTEM) && (FILESYSTEM == LittleFS)
     Serial.println("Mount LittleFS");
+    storage_type = 0;
     if (!LittleFS.begin(false, "/root"))
 
   // #if defined(FILESYSTEM) && (FILESYSTEM == SPIFFS)
@@ -218,9 +228,12 @@ void loop(){
           // if ((!s.starts_with(".")) && (s.ends_with(".avi"))) // Alternative 1
           if ((s.rfind(".", 0) != 0) && ((int)s.find(".avi", 0) > 0))
           {
-              s = root;
+              if (storage_type == 0)
+                s = root;
+              else if (storage_type == 1)
+                s = sd;
               s += file.path();
-
+              Serial.printf("Video to played: %s\n",s);
             if (avi_open((char *)s.c_str()))
             {
               Serial.println("AVI start");

@@ -44,7 +44,7 @@
 Arduino_DataBus *bus = new Arduino_ESP32SPI(
     TFT_DC, 
     TFT_CS,
-    -1, -1, -1, FSPI
+    -1, -1, -1, HSPI
     // TFT_SCLK, 
     // TFT_MOSI, 
     // TFT_MISO
