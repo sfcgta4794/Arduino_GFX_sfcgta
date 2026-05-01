@@ -31,7 +31,7 @@
 #define TFT_HEIGHT      240
 #define TFT_OFFSET_X    0   // Required to center the 172px width in 240px memory
 #define TFT_OFFSET_Y    0
-#define GFX_SPEED       20000000UL // 80MHz SPI speed for the S3 （when using internal memory)
+#define GFX_SPEED       80000000UL // 80MHz SPI speed for the S3 （when using internal memory)
 
 /*
  * 3. GFX INSTANTIATION
@@ -44,10 +44,10 @@
 Arduino_DataBus *bus = new Arduino_ESP32SPI(
     TFT_DC, 
     TFT_CS,
-    -1, -1, -1, HSPI
-    // TFT_SCLK, 
-    // TFT_MOSI, 
-    // TFT_MISO
+    // -1, -1, -1, HSPI
+    TFT_SCLK, 
+    TFT_MOSI, 
+    TFT_MISO
 );
 
 // Initialize the ST7789 Driver
@@ -68,8 +68,8 @@ Arduino_ST7789 *gfx = new Arduino_ST7789(
  * 4. OPTIONAL: SD CARD (Shared SPI Bus)
  * If you add an SD card later for AVI playback, use these pins.
  */
-#define SD_SUPPORTED
-#define SD_SCK          TFT_SCLK
-#define SD_MOSI         TFT_MOSI
-#define SD_MISO         14    // Example MISO pin for SD card
-#define SD_CS           15    // Example CS pin for SD card
+// #define SD_SUPPORTED
+// #define SD_SCK          TFT_SCLK
+// #define SD_MOSI         TFT_MOSI
+// #define SD_MISO         14    // Example MISO pin for SD card
+// #define SD_CS           15    // Example CS pin for SD card
