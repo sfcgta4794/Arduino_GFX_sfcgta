@@ -273,6 +273,58 @@ bool avi_decode()
   }
 }
 
+// new version of avi_draw which implemented ordered dithering
+// 4x4 Bayer Threshold Map for ordered dithering
+const int8_t bayer_map[4][4] = {
+    { -4,  0, -3,  1 },
+    {  2, -2,  3, -1 },
+    { -3,  1, -4,  0 },
+    {  3, -1,  2, -2 }
+};
+
+void avi_draw_dithered(int x, int y) {
+  // Logic to handle frame skipping from the original avi_draw
+  if ((avi_vcodec == MJPEG_CODEC_CODE) || (millis() < avi_skip_frame_ms)) {
+    unsigned long curr_ms = millis();
+    
+    uint16_t *p = output_buf;
+    for (int j = 0; j < avi_h; j++) {
+      for (int i = 0; i < avi_w; i++) {
+        // 1. Get pixel and handle Big-Endian swap if necessary
+        uint16_t c = *p++;
+        uint16_t color = (c << 8) | (c >> 8); // Swap to Little Endian for processing
+
+        // 2. Extract RGB components (R:5, G:6, B:5)
+        int r = (color >> 11) & 0x1F;
+        int g = (color >> 5) & 0x3F;
+        int b = color & 0x1F;
+
+        // 3. Apply Dither offset based on coordinates
+        int8_t offset = bayer_map[i % 4][j % 4];
+        
+        // Add offset and constrain to bit-depth limits
+        r = constrain(r + (offset >> 1), 0, 0x1F);
+        g = constrain(g + (offset >> 0), 0, 0x3F);
+        b = constrain(b + (offset >> 1), 0, 0x1F);
+
+        // 4. Draw the modified pixel
+        gfx->drawPixel(x + i, y + j, (r << 11) | (g << 5) | b);
+      }
+    }
+
+    avi_total_show_video_ms += millis() - curr_ms;//[cite: 6]
+
+    // Sync with frame rate
+    while (millis() < avi_next_frame_ms) {
+      vTaskDelay(pdMS_TO_TICKS(1));
+    }
+  } else {
+    ++avi_skipped_frames;//[cite: 6]
+  }
+}
+
+
+
 void avi_draw(int x, int y)
 {
   if ((avi_vcodec == MJPEG_CODEC_CODE)   // always show decoded MJPEG frame
