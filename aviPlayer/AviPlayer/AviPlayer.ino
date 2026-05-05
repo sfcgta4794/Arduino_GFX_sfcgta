@@ -90,7 +90,7 @@ void setup(){
   {
     Serial.println("gfx->begin() failed!");
   }
-  gfx->fillScreen(RGB565_BLUE); // default is RGB565_BLACK
+  // gfx->fillScreen(RGB565_BLUE); // default is RGB565_BLACK
   Serial.println("AVI Player Testing");
   #if defined(RGB_PANEL) || defined(DSI_PANEL) || defined(CANVAS)
     gfx->flush(true /* force_flush */);
@@ -232,6 +232,7 @@ void loop(){
                 if (avi_decode())
                 {
                   avi_draw(0, 0);
+                  // avi_draw_dithered(0,0);
                 }
               }
 
