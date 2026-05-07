@@ -15,21 +15,30 @@
  *     Copy files to SD card
  ******************************************************************************/
 const char *root = "/root";
-char *avi_filename = (char *)"/root/AviMp3Cinepak240p30fps.avi";
+const char *avi_folder = "/avi";
+// char *avi_filename = (char *)"/root/AviMp3Cinepak240p30fps.avi";
 
 // Dev Device Pins: <https://github.com/moononournation/Dev_Device_Pins.git>
-#include "PINS_T-DECK.h"
 
+#include <Wire.h>
+#include "es8311.h"
 #include <FFat.h>
 #include <LittleFS.h>
 #include <SPIFFS.h>
 #include <SD.h>
 #include <SD_MMC.h>
 
+// #include "PINS_T-DECK.h"
+#include "PINS_ESP32_S3_LCD_1.47_CUSTOM.h"
+
 size_t output_buf_size;
 uint16_t *output_buf;
 
 #include "AviFunc.h"
+
+#ifndef FILESYSTEM
+#define FILESYSTEM LittleFS
+#endif
 
 void setup()
 {
@@ -38,14 +47,14 @@ void setup()
 #endif
 
   Serial.begin(115200);
-  // Serial.setDebugOutput(true);
-  // while(!Serial);
+  Serial.setDebugOutput(true);
+  while(!Serial);
   Serial.println("AviCinepak");
 
   // If display and SD shared same interface, init SPI first
-#ifdef SPI_SCK
-  SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI);
-#endif
+// #ifdef SPI_SCK
+//   SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI);
+// #endif
 
   // Init Display
   // if (!gfx->begin())
@@ -69,21 +78,21 @@ void setup()
   // gfx->setTextColor(RGB565_WHITE, RGB565_BLACK);
   // gfx->setTextBound(60, 60, 240, 240);
 
-#if defined(SD_D1)
-  SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */, SD_D1, SD_D2, SD_CS /* D3 */);
-  if (!SD_MMC.begin(root, false /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_HIGHSPEED))
-#elif defined(SD_SCK)
-  pinMode(SD_CS, OUTPUT);
-  digitalWrite(SD_CS, HIGH);
-  SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */);
-  if (!SD_MMC.begin(root, true /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_DEFAULT))
-#elif defined(SD_CS)
-  if (!SD.begin(SD_CS, SPI, 80000000, "/root"))
-#else
-  if (!FFat.begin(false, root))
-  // if (!LittleFS.begin(false, root))
+// #if defined(SD_D1)
+//   SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */, SD_D1, SD_D2, SD_CS /* D3 */);
+//   if (!SD_MMC.begin(root, false /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_HIGHSPEED))
+// #elif defined(SD_SCK)
+//   pinMode(SD_CS, OUTPUT);
+//   digitalWrite(SD_CS, HIGH);
+//   SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */);
+//   if (!SD_MMC.begin(root, true /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_DEFAULT))
+// #elif defined(SD_CS)
+//   if (!SD.begin(SD_CS, SPI, 80000000, "/root"))
+// #else
+  // if (!FFat.begin(false, root))
+  if (!LittleFS.begin(false, root))
   // if (!SPIFFS.begin(false, root))
-#endif
+// #endif
   {
     Serial.println("ERROR: File system mount failed!");
   }
@@ -106,27 +115,77 @@ void setup()
 
 void loop()
 {
-  if (avi_open(avi_filename))
+  Serial.printf("Open folder: %s\n", avi_folder);
+  File dir = FILESYSTEM.open(avi_folder);
+  if (!dir.isDirectory())
   {
-    Serial.println("AVI start");
-    gfx->fillScreen(RGB565_BLACK);
+    Serial.println("Target is not a directory");
+    delay(5000); // avoid error repeat too fast
+  }
+  else {
+    // target is a directory
+    File file = dir.openNextFile();
+    while (file){
+      if (!file.isDirectory()){
+        std::string avi_filename = file.name();
+        if ((avi_filename.rfind(".", 0) != 0) && ((int)avi_filename.find(".avi", 0) > 0)){
+          avi_filename = root;
+          avi_filename += file.path();
 
-    avi_start_ms = millis();
+          if (avi_open((char *)avi_filename.c_str()))
+          {
+            Serial.println("AVI start");
+            gfx->fillScreen(RGB565_BLACK);
 
-    Serial.println("Start play loop");
-    while (avi_curr_frame < avi_total_frames)
-    {
-      if (avi_decode())
-      {
-        avi_draw(0, 0);
+            avi_start_ms = millis();
+
+            Serial.println("Start play loop");
+            while (avi_curr_frame < avi_total_frames)
+            {
+              if (avi_decode())
+              {
+                avi_draw(0, 0);
+              }
+            }
+
+            avi_close();
+            Serial.println("AVI end");
+
+            // avi_show_stat();
+          }
+        }
       }
     }
-
-    avi_close();
-    Serial.println("AVI end");
-
-    avi_show_stat();
   }
+
+
+
+
+
+
+
+  // Original version
+  // if (avi_open(avi_filename))
+  // {
+  //   Serial.println("AVI start");
+  //   gfx->fillScreen(RGB565_BLACK);
+
+  //   avi_start_ms = millis();
+
+  //   Serial.println("Start play loop");
+  //   while (avi_curr_frame < avi_total_frames)
+  //   {
+  //     if (avi_decode())
+  //     {
+  //       avi_draw(0, 0);
+  //     }
+  //   }
+
+  //   avi_close();
+  //   Serial.println("AVI end");
+
+  //   avi_show_stat();
+  // }
 
   delay(60 * 1000);
 }

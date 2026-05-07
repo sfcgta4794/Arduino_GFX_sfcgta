@@ -9,3 +9,5 @@ aviPlayer/AviPlayer/data/avi/output_esp32.avi
 aviPlayer/AviPlayer/backup_videos
 aviPlayer/AviPlayer/data/avi/output_topgun_dark.avi
 aviPlayer/AviPlayer/output_3.avi
+aviPlayer/AviCinepak/top_gun.mp4
+aviPlayer/AviCinepak/data/avi/output_topgun_cinepak_dark.avi
