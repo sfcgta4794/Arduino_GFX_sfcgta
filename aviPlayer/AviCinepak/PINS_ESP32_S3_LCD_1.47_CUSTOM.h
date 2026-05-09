@@ -18,7 +18,8 @@
 #define TFT_BL          21    // BLK
 #define TFT_CS          13    // CS
 #define TFT_DC          9     // DC
-#define TFT_RST         10    // RES
+// #define TFT_RST         10    // RES
+#define TFT_RST         1    // RES
 #define TFT_MOSI        11    // SDA
 #define TFT_SCLK        12    // SCL
 #define TFT_MISO        -1    // Not connected
@@ -54,11 +55,11 @@
 Arduino_DataBus *bus = new Arduino_ESP32SPI(
     TFT_DC, 
     TFT_CS,
-    // -1, -1, -1, HSPI
-    TFT_SCLK, 
-    TFT_MOSI, 
-    SD_MISO,
-    FSPI // Check if this works properly. 
+    -1, -1, -1, HSPI
+    // TFT_SCLK, 
+    // TFT_MOSI, 
+    // SD_MISO,
+    // FSPI // Check if this works properly. 
 );
 
 // Initialize the ST7789 Driver
