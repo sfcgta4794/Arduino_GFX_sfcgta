@@ -24,16 +24,6 @@
 #define TFT_MISO        -1    // Not connected
 
 /*
- * 4. OPTIONAL: SD CARD (Shared SPI Bus)
- * If you add an SD card later for AVI playback, use these pins.
- */
-#define SD_SUPPORTED
-#define SD_SCK          TFT_SCLK
-#define SD_MOSI         TFT_MOSI
-#define SD_MISO         14    // Example MISO pin for SD card
-#define SD_CS           15    // Example CS pin for SD card
-
-/*
  * 2. DISPLAY SPECIFICATIONS
  * Specific to ZJY147S0800TG01 (1.47" 172x320)
  */
@@ -57,8 +47,7 @@ Arduino_DataBus *bus = new Arduino_ESP32SPI(
     // -1, -1, -1, HSPI
     TFT_SCLK, 
     TFT_MOSI, 
-    SD_MISO,
-    FSPI // Check if this works properly. 
+    TFT_MISO
 );
 
 // Initialize the ST7789 Driver
@@ -75,3 +64,12 @@ Arduino_ST7789 *gfx = new Arduino_ST7789(
 
 #define GFX_BL          TFT_BL
 
+/*
+ * 4. OPTIONAL: SD CARD (Shared SPI Bus)
+ * If you add an SD card later for AVI playback, use these pins.
+ */
+#define SD_SUPPORTED
+#define SD_SCK          TFT_SCLK
+#define SD_MOSI         TFT_MOSI
+#define SD_MISO         14    // Example MISO pin for SD card
+#define SD_CS           15    // Example CS pin for SD card

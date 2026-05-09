@@ -37,15 +37,28 @@ uint16_t *output_buf;
 #include "AviFunc.h"
 
 #ifndef FILESYSTEM
-#define FILESYSTEM LittleFS
+  #if defined(SD_SUPPORTED)
+    #define FILESYSTEM SD
+  #else
+    #define FILESYSTEM LittleFS
+  #endif
 #endif
+
+#ifndef SD_SUPPORTED
+  #define SD_SUPPORTED
+#endif 
 
 void setup()
 {
+  
 #ifdef DEV_DEVICE_INIT
   DEV_DEVICE_INIT();
 #endif
-
+  pinMode(TFT_CS, OUTPUT);
+  pinMode(SD_CS, OUTPUT);
+  digitalWrite(TFT_CS, HIGH);
+  digitalWrite(SD_CS, HIGH);
+  
   Serial.begin(115200);
   Serial.setDebugOutput(true);
   while(!Serial);
@@ -53,14 +66,16 @@ void setup()
 
   // If display and SD shared same interface, init SPI first
 // #ifdef SPI_SCK
-//   SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI);
-// #endif
+#if defined(SD_SUPPORTED)
+  Serial.println("SD card supported");
+  SPI.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
+#endif
 
   // Init Display
   // if (!gfx->begin())
   if (!gfx->begin(GFX_SPEED))
   {
-    Serial.println("gfx->begin() failed!");
+    Serial.println("gfx->begin() display init failed!");
   }
   gfx->fillScreen(RGB565_BLACK);
 
@@ -78,7 +93,13 @@ void setup()
   // gfx->setTextColor(RGB565_WHITE, RGB565_BLACK);
   // gfx->setTextBound(60, 60, 240, 240);
 
-// #if defined(SD_D1)
+#if defined(SD_SUPPORTED)
+  Serial.println("Using SD card as data source!");
+  // pinMode(SD_CS, OUTPUT);
+  // digitalWrite(SD_CS, HIGH);
+  // SD.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */);
+  if (!SD.begin(SD_CS, SPI, 20000000, root))
+// #if defined(SD_D1) // SD card, high speed (We temporarily not use this)
 //   SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */, SD_D1, SD_D2, SD_CS /* D3 */);
 //   if (!SD_MMC.begin(root, false /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_HIGHSPEED))
 // #elif defined(SD_SCK)
@@ -88,11 +109,12 @@ void setup()
 //   if (!SD_MMC.begin(root, true /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_DEFAULT))
 // #elif defined(SD_CS)
 //   if (!SD.begin(SD_CS, SPI, 80000000, "/root"))
-// #else
+#else
   // if (!FFat.begin(false, root))
+  Serial.println("Using local LittleFS as data source!");
   if (!LittleFS.begin(false, root))
   // if (!SPIFFS.begin(false, root))
-// #endif
+#endif
   {
     Serial.println("ERROR: File system mount failed!");
   }
