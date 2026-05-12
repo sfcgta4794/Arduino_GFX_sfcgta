@@ -39,6 +39,10 @@ uint16_t *output_buf;
 
 #define FILESYSTEM SD
 
+// Make SD card uses another SPI channel (HSPI)
+SPIClass SD_SPI(HSPI);
+
+
 void setup()
 {
 
@@ -68,7 +72,7 @@ void setup()
 
   // If display and SD shared same interface, init SPI first
   Serial.println("SD card supported");
-  SPI.begin(SD_SCK, SD_MISO, SD_MOSI);
+  SD_SPI.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
 
   Serial.println("SPI initialized");
   // Init Display
@@ -98,9 +102,10 @@ void setup()
   Serial.println("Using SD card as data source!");
   
   // SD.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */);
-  if (!SD.begin(SD_CS, SPI, 20000000))
+  if (!SD.begin(SD_CS, SD_SPI, 80000000, sd))
   {
     Serial.println("ERROR: File system mount failed!");
+    return;
   }
   else
   {
@@ -137,17 +142,33 @@ void loop()
     // Serial.println(file.path());
     while (file){
       if (!file.isDirectory()){
-        std::string avi_filename = file.name();
+        std::string avi_filename = sd;
+        avi_filename += file.path();
 
         // Serial.printf("filename 01 = %s\n",avi_filename.c_str());
         if ((avi_filename.rfind(".", 0) != 0) && ((int)avi_filename.find(".avi", 0) > 0)){
           // avi_filename = avi_folder;
-          avi_filename = file.path();
+          // avi_filename = file.path();
 
           Serial.printf("filename = %s\n", avi_filename.c_str());
 
+          if (SD.exists(avi_filename.c_str()))
+            Serial.println("Target video file exists!");
+
+
           if (avi_open((char *)avi_filename.c_str()))
           {
+            // garbage detection
+            if (avi_w <= 0 || avi_w > 480 || avi_h <= 0 || avi_h > 480 || avi_total_frames <= 0) {
+                Serial.printf("FATAL: Corrupted AVI Header - W:%ld H:%ld Frames:%ld\n", avi_w, avi_h, avi_total_frames);
+                avi_close();
+                delay(5000); 
+                return; 
+            }
+
+
+
+
             Serial.println("AVI start");
             gfx->fillScreen(RGB565_BLACK);
 
@@ -166,6 +187,10 @@ void loop()
             Serial.println("AVI end");
 
             // avi_show_stat();
+          }
+          else{
+            // Playing failed
+            break; // terminate 
           }
         }
       }

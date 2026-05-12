@@ -1,10 +1,12 @@
+
 #define AVI_SUPPORT_CINEPAK
 // #define AVI_SUPPORT_MJPEG
 // #define AVI_SUPPORT_AUDIO
 
 extern "C"
 {
-#include <avilib.h>
+// #include <avilib.h>
+#include "avilibRead.h"
 }
 
 #define SKIP_FRAME_TOLERANT_MS 250
