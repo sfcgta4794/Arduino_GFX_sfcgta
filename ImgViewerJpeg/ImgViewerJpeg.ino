@@ -98,7 +98,7 @@
 // pixel drawing callback
 static int jpegDrawCallback(JPEGDRAW *pDraw)
 {
-  // Serial.printf("Draw pos = %d,%d. size = %d x %d\n", pDraw->x, pDraw->y, pDraw->iWidth, pDraw->iHeight);
+  Serial.printf("Draw pos = %d,%d. size = %d x %d\n", pDraw->x, pDraw->y, pDraw->iWidth, pDraw->iHeight);
   gfx->draw16bitBeRGBBitmap(pDraw->x, pDraw->y, pDraw->pPixels, pDraw->iWidth, pDraw->iHeight);
   return 1;
 }
@@ -114,16 +114,26 @@ void setup()
   while(!Serial);
   Serial.println("Arduino_GFX JPEG Image Viewer example");
   
-  // Init Display
-  if (!gfx->begin())
-  {
-    Serial.println("gfx->begin() failed!");
-  }
-  gfx->fillScreen(RGB565_BLACK);
+  pinMode(TFT_RST, OUTPUT);
+  digitalWrite(TFT_RST, HIGH);
 
-// #ifdef GFX_BL
+  pinMode(TFT_CS, OUTPUT);
+  digitalWrite(TFT_CS, HIGH);
+
   pinMode(TFT_BL, OUTPUT);
   digitalWrite(TFT_BL, HIGH);
+
+  // Init Display
+  if (!gfx->begin(GFX_SPEED))
+  {
+    Serial.println("gfx->begin() failed!");
+    gfx->fillScreen(RGB565_WHITE);
+  }
+  // gfx->fillScreen(RGB565_BLACK);
+
+// #ifdef GFX_BL
+  // pinMode(TFT_BL, OUTPUT);
+  // digitalWrite(TFT_BL, HIGH);
 // #endif
 
 /* Wio Terminal */
@@ -157,12 +167,14 @@ void setup()
   }
   else
   {
+    Serial.println(F("File System Mounted"));
     unsigned long start = millis();
 
     Serial.printf("gfx->width() = %i, gfx->height() = %i\n",gfx->width(),gfx->height());
 
+    // gfx->fillScreen(RGB565_GREEN); // for testing 
 
-    jpegDraw(JPEG_FILENAME, jpegDrawCallback, false /* useBigEndian */,
+    jpegDraw(JPEG_FILENAME, jpegDrawCallback, true /* useBigEndian */,
              0 /* x */, 0 /* y */, gfx->width() /* widthLimit */, gfx->height() /* heightLimit */);
     Serial.printf("Time used: %lu\n", millis() - start);
   }
@@ -177,10 +189,12 @@ void loop()
 
   unsigned long start = millis();
 
-  jpegDraw(JPEG_FILENAME, jpegDrawCallback, true /* useBigEndian */,
-           random(w * 2) - w /* x */,
-           random(h * 2) - h /* y */,
-           w /* widthLimit */, h /* heightLimit */);
+  // gfx->fillScreen(RGB565_GREEN);
+
+  // jpegDraw(JPEG_FILENAME, jpegDrawCallback, true /* useBigEndian */,
+  //          random(w * 2) - w /* x */,
+  //          random(h * 2) - h /* y */,
+  //          w /* widthLimit */, h /* heightLimit */);
 
   Serial.printf("Time used: %lu\n", millis() - start);
 
