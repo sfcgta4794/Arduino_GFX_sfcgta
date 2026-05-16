@@ -1,0 +1,7 @@
+Compile to MJPEG encoding
+
+ffmpeg -ss 0 -i top_gun.mp4 -to 15 -vf "scale=240:240,transpose=1,eq=brightness=0.06:contrast=1.1:gamma=1.5,format=yuv420p" -vcodec mjpeg -an -r 15 -q:v 5 -maxrate 1M -bufsize 500k output_topgun.avi
+
+Compile to cinepak encoding
+
+ffmpeg -ss 10 -i ZNS_freedom.mp4 -to 15 -vf "scale=240:240,transpose=1,eq=brightness=0.06:contrast=1.1:gamma=1.5,unsharp=3:3:-0.5:3:3:-0.5,format=yuv420p" -c:v cinepak -b:v 700k -an -r 10 freedom_2.avi

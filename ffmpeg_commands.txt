@@ -1,0 +1,45 @@
+ffmpeg -i tv2.mp4 -t 15 -vf "scale=240:240,transpose=1" -vcodec mjpeg -an -r 15 -q:v 11 output_esp32_240.avi
+
+ffmpeg -i tv2.mp4 -t 15 -vf "scale=240:240,transpose=1,eq=brightness=0.06:contrast=1.1:gamma=1.5" -vcodec mjpeg -an -r 15 -q:v 2 output_esp32_240.avi
+
+=====
+
+
+ffmpeg -i top_gun.mp4 -t 15 -vf "scale=240:240,transpose=1,eq=brightness=0.06:contrast=1.1:gamma=1.5" -vcodec mjpeg -an -r 15 -q:v 2 output_topgun.avi
+
+ffmpeg -i input_video.mp4 -t 15 -vf "scale=240:240,transpose=1,eq=brightness=0.06:contrast=1.1:gamma=1.5,format=yuv420p" -vcodec mjpeg -an -r 15 -q:v 5 -maxrate 1M -bufsize 500k output_esp32_240.avi
+
+====
+ffmpeg -ss 10 -i input_video.mp4 -to 25 -vf "scale=240:240,transpose=1,eq=brightness=0.06:contrast=1.1:gamma=1.5,format=yuv420p" -vcodec mjpeg -an -r 15 -q:v 5 -maxrate 1M -bufsize 500k output_esp32_240.avi
+
+====
+ffmpeg -ss 00:01:00 -i input_video.mp4 -t 10 -vf "scale=240:240,transpose=1,eq=brightness=0.06:contrast=1.1:gamma=1.5,format=yuv420p" -vcodec mjpeg -an -r 15 -q:v 5 -maxrate 1M -bufsize 500k output_esp32_240.avi
+
+====
+Use cinepak
+
+ffmpeg -ss [START_TIME] -i input_video.mp4 -to [END_TIME] \
+-vf "scale=240:240,transpose=1,eq=brightness=0.06:contrast=1.1:gamma=1.5,format=yuv420p" \
+-c:v cinepak -an -r 15 output_cinepak.avi
+
+
+====
+work zone
+
+ffmpeg -ss 0 -i top_gun.mp4 -to 15 -vf "scale=240:240,transpose=1,eq=brightness=0.06:contrast=1.1:gamma=1.5,format=yuv420p" -vcodec mjpeg -an -r 15 -q:v 5 -maxrate 1M -bufsize 500k output_topgun.avi
+
+
+ffmpeg -ss 10 -i top_gun.mp4 -to 15 -vf "scale=240:240,transpose=1,eq=brightness=0.06:contrast=1.1:gamma=1.5,format=yuv420p" -c:v cinepak -an -r 15 output_topgun_cinepak_dark.avi
+
+ffmpeg -ss 10 -i ZNS_freedom.mp4 -to 15 -vf "scale=240:240,transpose=1,eq=brightness=0.06:contrast=1.1:gamma=1.5,format=yuv420p" -c:v cinepak -b:v 700k -strips 16 -an -r 15 freedom_2.avi
+
+
+ffmpeg -ss 10 -i ZNS_freedom.mp4 -to 15 -vf "scale=240:240,transpose=1,eq=brightness=0.06:contrast=1.1:gamma=1.5,unsharp=3:3:-0.5:3:3:-0.5,format=yuv420p" -c:v cinepak -b:v 700k -an -r 10 freedom_2.avi
+
+
+
+
+
+
+
+
