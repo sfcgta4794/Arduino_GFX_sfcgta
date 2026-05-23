@@ -17,13 +17,14 @@
  ******************************************************************************/
 const char *root = "/root";
 const char *sd = "/sd";
-const char *avi_folder = "/avi";
+const char *avi_folder = "/";
 // char *avi_filename = (char *)"/root/AviMp3Mjpeg240p15fps.avi";
 // char *avi_filename = (char *)"/root/AviMp3Mjpeg272p15fps.avi";
 
 // Dev Device Pins: <https://github.com/moononournation/Dev_Device_Pins.git>
 #include "PINS_ESP32_S3_LCD_1.47_CUSTOM.h"
 
+#include <string>
 #include <FFat.h>
 #include <LittleFS.h>
 #include <SPIFFS.h>
@@ -31,6 +32,17 @@ const char *avi_folder = "/avi";
 #include <SD_MMC.h>
 
 #include "AviFunc_callback.h"
+
+#ifndef AUDIO_MUTE
+#define AUDIO_MUTE true
+#endif
+
+#ifndef FILESYSTEM
+#define FILESYSTEM LittleFS
+#endif
+
+size_t output_buf_size;
+uint16_t *output_buf;
 
 // drawing callback
 int drawMCU(JPEGDRAW *pDraw)
@@ -58,9 +70,9 @@ void setup()
   Serial.println("AviMjpeg_JPEGDEC");
 
   // If display and SD shared same interface, init SPI first
-#ifdef SPI_SCK
-  SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI);
-#endif
+// #ifdef SPI_SCK
+//   SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI);
+// #endif
 
   // Init Display
   // if (!gfx->begin())
@@ -69,6 +81,12 @@ void setup()
     Serial.println("gfx->begin() failed!");
   }
   gfx->fillScreen(RGB565_BLACK);
+  Serial.println("AVI Player Testing");
+  #if defined(RGB_PANEL) || defined(DSI_PANEL) || defined(CANVAS)
+    gfx->flush(true /* force_flush */);
+  #endif
+
+///////
 
 #ifdef GFX_BL
 #if defined(ESP_ARDUINO_VERSION_MAJOR) && (ESP_ARDUINO_VERSION_MAJOR < 3)
@@ -81,8 +99,13 @@ void setup()
 #endif // ESP_ARDUINO_VERSION_MAJOR >= 3
 #endif // GFX_BL
 
-  // gfx->setTextColor(RGB565_WHITE, RGB565_BLACK);
-  // gfx->setTextBound(60, 60, 240, 240);
+  gfx->setTextColor(RGB565_WHITE, RGB565_BLACK);
+  gfx->setTextBound(60, 60, 240, 240);
+
+  #ifdef AUDIO_MUTE
+    pinMode(AUDIO_MUTE, OUTPUT);
+    digitalWrite(AUDIO_MUTE, LOW); // mute first
+  #endif
 
 // #if defined(SD_D1)
 //   SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */, SD_D1, SD_D2, SD_CS /* D3 */);
@@ -104,33 +127,95 @@ void setup()
   }
   else
   {
+    // screen init successful
+      output_buf_size = gfx->width() * gfx->height() * 2;
+      #if defined(RGB_PANEL) | defined(DSI_PANEL)
+          output_buf = gfx->getFramebuffer();
+      #else
+          output_buf = (uint16_t *)aligned_alloc(16, output_buf_size);
+      #endif
+
+      if (!output_buf)
+      {
+        Serial.println("output_buf aligned_alloc failed!");
+      }
+
     avi_init();
   }
 }
 
 void loop()
 {
-  if (avi_open(avi_filename))
+  Serial.printf("Open folder: %s\n", avi_folder);
+  File dir = FILESYSTEM.open(avi_folder);
+
+  if (!dir.isDirectory())
   {
-    Serial.println("AVI start");
-    gfx->fillScreen(RGB565_BLACK);
+    Serial.println("Target is not a directory");
+    delay(5000); // avoid error repeat too fast
+  }
+  else{
+    // target is a directory
+    File file = dir.openNextFile();
 
-    avi_start_ms = millis();
-
-    Serial.println("Start play loop");
-    while (avi_curr_frame < avi_total_frames)
+    while (file)
     {
-      if (avi_decode())
+      if (!file.isDirectory())
       {
-        avi_draw(0, 0);
+        std::string s = file.name();
+        if ((s.rfind(".", 0) != 0) && ((int)s.find(".avi", 0) > 0))
+        {
+          s = root;
+          s += file.path();
+
+          if (avi_open((char *)s.c_str()))
+          {
+            Serial.println("AVI start");
+            gfx->fillScreen(RGB565_BLACK);
+
+            avi_start_ms = millis();
+
+            Serial.println("Start play loop");
+
+            while (avi_curr_frame < avi_total_frames)
+            {
+              if (avi_decode())
+                {
+                  avi_draw(0, 0);
+                }
+            }
+
+            avi_close();
+            Serial.println("AVI end");
+
+            // avi_show_stat(); // for debug stat
+            delay(5000); // 5 seconds
+          }
+        }
       }
     }
-
-    avi_close();
-    Serial.println("AVI end");
-
-    avi_show_stat();
   }
+  // if (avi_open(avi_filename))
+  // {
+  //   Serial.println("AVI start");
+  //   gfx->fillScreen(RGB565_BLACK);
 
-  delay(60 * 1000);
+  //   avi_start_ms = millis();
+
+  //   Serial.println("Start play loop");
+  //   while (avi_curr_frame < avi_total_frames)
+  //   {
+  //     if (avi_decode())
+  //     {
+  //       avi_draw(0, 0);
+  //     }
+  //   }
+
+  //   avi_close();
+  //   Serial.println("AVI end");
+
+  //   avi_show_stat();
+  // }
+
+  // delay(60 * 1000);
 }

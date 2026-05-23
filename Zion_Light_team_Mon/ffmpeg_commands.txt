@@ -22,6 +22,10 @@ ffmpeg -ss [START_TIME] -i input_video.mp4 -to [END_TIME] \
 -vf "scale=240:240,transpose=1,eq=brightness=0.06:contrast=1.1:gamma=1.5,format=yuv420p" \
 -c:v cinepak -an -r 15 output_cinepak.avi
 
+====
+Use AviMjpeg_JPEGDEC
+
+ffmpeg -ss 10 -i ZNS_freedom.mp4 -to 25 -vcodec mjpeg -pix_fmt yuvj420p -vf "scale=240:240:force_original_aspect_ratio=decrease,pad=240:240:(ow-iw)/2:(oh-ih)/2,format=yuv420p" -r 20 -b:v 900k -an output_15s.avi
 
 ====
 work zone

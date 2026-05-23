@@ -15,120 +15,161 @@
  *   SD:
  *     Copy files to SD card
  ******************************************************************************/
-const char *root = "/root";
-char *avi_filename = (char *)"/root/AviMp3Mjpeg240p15fps.avi";
+// const char* root = "/root";
+// char* avi_filename = (char*)"/root/AviMp3Mjpeg240p15fps.avi";
+
+const char* root = "/root";
+const char* root2 = "/";
+char* avi_filename = (char*)"/root/dream_1.avi";
+
 // char *avi_filename = (char *)"/root/AviMp3Mjpeg272p15fps.avi";
 
 // Dev Device Pins: <https://github.com/moononournation/Dev_Device_Pins.git>
-#include "PINS_T-DECK.h"
-
+// #include "PINS_T-DECK.h"
+#include "PINS_ESP32_S3_LCD_1.47_CUSTOM.h" 
 #include <FFat.h>
 #include <LittleFS.h>
-#include <SPIFFS.h>
 #include <SD.h>
 #include <SD_MMC.h>
+#include <SPIFFS.h>
 
 #include "AviFunc_callback.h"
 
+
 // drawing callback
-int drawMCU(JPEGDRAW *pDraw)
-{
-  // Serial.printf("Draw pos = (%d, %d), size = %d x %d\n", pDraw->x, pDraw->y, pDraw->iWidth, pDraw->iHeight);
+int drawMCU(JPEGDRAW* pDraw) {
+    // Serial.printf("Draw pos = (%d, %d), size = %d x %d\n", pDraw->x,
+    // pDraw->y, pDraw->iWidth, pDraw->iHeight);
 
-  unsigned long s = millis();
-  gfx->draw16bitBeRGBBitmap(pDraw->x, pDraw->y, pDraw->pPixels, pDraw->iWidth, pDraw->iHeight);
-  s = millis() - s;
-  avi_total_show_video_ms += s;
-  avi_total_decode_video_ms -= s;
+    unsigned long s = millis();
+    gfx->draw16bitBeRGBBitmap(pDraw->x, pDraw->y, pDraw->pPixels, pDraw->iWidth,
+                              pDraw->iHeight);
+    s = millis() - s;
+    avi_total_show_video_ms += s;
+    avi_total_decode_video_ms -= s;
 
-  return 1;
+    return 1;
 }
 
-void setup()
-{
+void setup() {
 #ifdef DEV_DEVICE_INIT
-  DEV_DEVICE_INIT();
+    DEV_DEVICE_INIT();
 #endif
 
-  Serial.begin(115200);
-  // Serial.setDebugOutput(true);
-  // while(!Serial);
-  Serial.println("AviMjpeg_JPEGDEC");
+    Serial.begin(115200);
+    // Serial.setDebugOutput(true);
+    // while(!Serial);
+    Serial.println("AviMjpeg_JPEGDEC");
 
-  // If display and SD shared same interface, init SPI first
+    // If display and SD shared same interface, init SPI first
 #ifdef SPI_SCK
-  SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI);
+    Serial.println("SPI init");
+    SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI);
 #endif
 
-  // Init Display
-  // if (!gfx->begin())
-  if (!gfx->begin(GFX_SPEED))
-  {
-    Serial.println("gfx->begin() failed!");
-  }
-  gfx->fillScreen(RGB565_BLACK);
+    // Init Display
+    // if (!gfx->begin())
+    if (!gfx->begin(GFX_SPEED)) {
+        Serial.println("gfx->begin() failed!");
+    }
+    gfx->fillScreen(RGB565_BLACK);
 
 #ifdef GFX_BL
 #if defined(ESP_ARDUINO_VERSION_MAJOR) && (ESP_ARDUINO_VERSION_MAJOR < 3)
-  ledcSetup(0, 1000, 8);
-  ledcAttachPin(GFX_BL, 0);
-  ledcWrite(0, 204);
-#else  // ESP_ARDUINO_VERSION_MAJOR >= 3
-  ledcAttachChannel(GFX_BL, 1000, 8, 1);
-  ledcWrite(GFX_BL, 204);
-#endif // ESP_ARDUINO_VERSION_MAJOR >= 3
-#endif // GFX_BL
+    ledcSetup(0, 1000, 8);
+    ledcAttachPin(GFX_BL, 0);
+    ledcWrite(0, 204);
+#else   // ESP_ARDUINO_VERSION_MAJOR >= 3
+    ledcAttachChannel(GFX_BL, 1000, 8, 1);
+    ledcWrite(GFX_BL, 204);
+#endif  // ESP_ARDUINO_VERSION_MAJOR >= 3
+#endif  // GFX_BL
 
-  // gfx->setTextColor(RGB565_WHITE, RGB565_BLACK);
-  // gfx->setTextBound(60, 60, 240, 240);
+    // gfx->setTextColor(RGB565_WHITE, RGB565_BLACK);
+    // gfx->setTextBound(60, 60, 240, 240);
 
 #if defined(SD_D1)
-  SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */, SD_D1, SD_D2, SD_CS /* D3 */);
-  if (!SD_MMC.begin(root, false /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_HIGHSPEED))
+    Serial.println("SD_MMC");
+    SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */, SD_D1, SD_D2,
+                   SD_CS /* D3 */);
+    if (!SD_MMC.begin(root, false /* mode1bit */,
+                      false /* format_if_mount_failed */, SDMMC_FREQ_HIGHSPEED))
 #elif defined(SD_SCK)
-  pinMode(SD_CS, OUTPUT);
-  digitalWrite(SD_CS, HIGH);
-  SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */);
-  if (!SD_MMC.begin(root, true /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_DEFAULT))
+    Serial.println("SD_SCK");
+    pinMode(SD_CS, OUTPUT);
+    digitalWrite(SD_CS, HIGH);
+    SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */);
+    if (!SD_MMC.begin(root, true /* mode1bit */,
+                      false /* format_if_mount_failed */, SDMMC_FREQ_DEFAULT))
 #elif defined(SD_CS)
-  if (!SD.begin(SD_CS, SPI, 80000000, "/root"))
+    Serial.println("SD_CS");
+    if (!SD.begin(SD_CS, SPI, 80000000, "/root"))
 #else
-  if (!FFat.begin(false, root))
-  // if (!LittleFS.begin(false, root))
-  // if (!SPIFFS.begin(false, root))
+    // if (!FFat.begin(false, root))
+    Serial.println("LittleFS");
+    if (!LittleFS.begin(false, root))
+    // if (!SPIFFS.begin(false, root))
 #endif
-  {
-    Serial.println("ERROR: File system mount failed!");
-  }
-  else
-  {
-    avi_init();
-  }
+    {
+        Serial.println("ERROR: File system mount failed!");
+    } else {
+        avi_init();
+    }
 }
 
-void loop()
-{
-  if (avi_open(avi_filename))
-  {
-    Serial.println("AVI start");
-    gfx->fillScreen(RGB565_BLACK);
+void loop() {
+    Serial.printf("Open folder: %s\n", root2);
+    File dir = LittleFS.open(root2);
 
-    avi_start_ms = millis();
-
-    Serial.println("Start play loop");
-    while (avi_curr_frame < avi_total_frames)
+    if (!dir.isDirectory())
     {
-      if (avi_decode())
-      {
-        avi_draw(0, 0);
-      }
+        Serial.println("Target is not a directory");
+        delay(5000); // avoid error repeat too fast
+    }
+    else {
+        // target is a directory
+        File file = dir.openNextFile();
+
+        while (file){
+            if (!file.isDirectory())
+            {
+                std::string s = file.name();
+                if ((s.rfind(".", 0) != 0) && ((int)s.find(".avi", 0) > 0))
+                {
+                    s = root;
+                    s += file.path();
+
+                    if (avi_open(avi_filename)) {
+                        Serial.println("AVI start");
+                        gfx->fillScreen(RGB565_BLACK);
+
+                        avi_start_ms = millis();
+
+                        Serial.println("Start play loop");
+                        while (avi_curr_frame < avi_total_frames) {
+                            if (avi_decode()) {
+                                avi_draw(0, 0);
+                            }
+                        }
+
+                        avi_close();
+                        Serial.println("AVI end");
+
+                        // avi_show_stat();
+                    }
+                }
+            }
+        }
+        delay(10 * 1000);
     }
 
-    avi_close();
-    Serial.println("AVI end");
 
-    avi_show_stat();
-  }
 
-  delay(60 * 1000);
+
+
+
+
+    
+
+    
 }
