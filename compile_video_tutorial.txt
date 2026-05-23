@@ -5,3 +5,7 @@ ffmpeg -ss 0 -i top_gun.mp4 -to 15 -vf "scale=240:240,transpose=1,eq=brightness=
 Compile to cinepak encoding
 
 ffmpeg -ss 10 -i ZNS_freedom.mp4 -to 15 -vf "scale=240:240,transpose=1,eq=brightness=0.06:contrast=1.1:gamma=1.5,unsharp=3:3:-0.5:3:3:-0.5,format=yuv420p" -c:v cinepak -b:v 700k -an -r 10 freedom_2.avi
+
+Compile to MJPEG, JPEG DEC
+
+ffmpeg -ss 10 -i dream_comes_true.mp4 -to 15 -vcodec mjpeg -pix_fmt yuvj420p -vf "scale=160:160:force_original_aspect_ratio=decrease,pad=240:240:(ow-iw)/2:(oh-ih)/2:black,format=yuv420p" -r 12 -b:v 350k -an dream_1.avi
