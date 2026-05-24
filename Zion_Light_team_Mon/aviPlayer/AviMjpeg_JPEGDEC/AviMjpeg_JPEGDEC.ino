@@ -139,7 +139,9 @@ void loop() {
                     s = root;
                     s += file.path();
 
-                    if (avi_open(avi_filename)) {
+                    const char * sc = s.c_str();
+
+                    if (avi_open((char *) sc)) { // avi_filename
                         Serial.println("AVI start");
                         gfx->fillScreen(RGB565_BLACK);
 
