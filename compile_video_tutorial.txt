@@ -8,4 +8,4 @@ ffmpeg -ss 10 -i ZNS_freedom.mp4 -to 15 -vf "scale=240:240,transpose=1,eq=bright
 
 Compile to MJPEG, JPEG DEC
 
-ffmpeg -ss 10 -i ZNS_freedom.mp4 -to 15 -vcodec mjpeg -pix_fmt yuvj420p -vf "scale=160:160:force_original_aspect_ratio=decrease,pad=240:240:(ow-iw)/2:(oh-ih)/2:black,format=yuv420p" -r 12 -b:v 350k -an dream_1.avi
+ffmpeg -ss 10 -i ZNS_freedom.mp4 -to 15 -vcodec mjpeg -pix_fmt yuvj420p -vf "scale=240:240:force_original_aspect_ratio=decrease,pad=240:240:(ow-iw)/2:(oh-ih)/2:black,format=yuv420p" -r 12 -b:v 350k -an dream_240.avi
